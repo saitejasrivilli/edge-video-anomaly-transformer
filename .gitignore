@@ -29,9 +29,9 @@ Thumbs.db
 *.pem
 *.key
 
-# Datasets and model artifacts
-data/
-datasets/
+# Datasets and model artifacts (repo-root only — not src/evat/data or tests/fixtures)
+/data/
+/datasets/
 *.pt
 *.pth
 *.onnx
