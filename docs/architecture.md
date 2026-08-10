@@ -42,7 +42,7 @@ Optimized Runtime
 | Segmentation | Code complete (Phase 3) — U-Net baseline, dataset/transforms/loss/metrics/trainer/checkpointing/visualization implemented and unit-tested (CPU, synthetic fixtures). **Training not yet executed in Colab; no performance metrics exist yet.** |
 | Object tracking | Code complete (Phase 4) — baseline mask-IoU greedy tracker, lifecycle (NEW/ACTIVE/MISSED/TERMINATED), ground-truth/prediction separation, identity metrics, visualization implemented and unit-tested (CPU, synthetic fixtures). **Colab evaluation not yet executed; no tracking performance metrics exist yet.** |
 | Visual feature extraction | Code complete (Phase 5) — baseline handcrafted encoder, learned MobileNetV3-Small encoder (untrained weights locally), crop/temporal/cache layers implemented and unit-tested (CPU, synthetic fixtures, no pretrained-weight download). **Colab feature-extraction experiment not yet executed; no performance or feature-quality metrics exist yet.** |
-| Video Transformer (from scratch) | Not started (Phase 6) — **not implemented yet** |
+| Video Transformer (from scratch) | Code complete (Phase 6) — attention/positional-encoding/block/encoder/pooling/prediction-head all implemented from scratch with PyTorch primitives, unit-tested (CPU, synthetic data, including an attention correctness test and a tiny overfit test). **Colab training not yet executed; no model performance metrics exist yet.** |
 | Baselines / ablations | Not started (Phase 7) |
 | Anomaly detection | Not started (Phase 8) |
 | Inference optimization | Not started (Phase 9) |
@@ -234,6 +234,108 @@ to return an entry whose stored config hash doesn't match the caller's
 current config (`is_stale()` exposes this check directly) — a
 configuration change never silently reuses stale features. Feature
 caches are never committed to Git (`.gitignore`: `results/features/cache/`).
+
+## Video Transformer (Phase 6)
+
+**The temporal Transformer is implemented from scratch using PyTorch
+primitives; no complete pretrained Video Transformer architecture is
+used.** No TimeSformer, VideoMAE, Video Swin, or `torch.nn.
+TransformerEncoder`/`torch.nn.MultiheadAttention` call anywhere in
+`evat.models.transformer`.
+
+**What is reused from PyTorch:** `nn.Linear`, `nn.LayerNorm`,
+`nn.Dropout`, `nn.GELU`/`nn.ReLU`, and raw tensor ops (`matmul`,
+`softmax`, `transpose`, `view`). **What is NOT reused:** the attention
+mechanism itself, positional encoding, the encoder block structure, and
+the pooling/head logic — all hand-implemented in
+`src/evat/models/transformer/{attention,positional,feedforward,block,
+encoder,pooling,model}.py`.
+
+**Tensor shapes**, `B`=batch, `T`=sequence length, `D`=`feature_dim`
+(Phase 5 output), `d_model`=Transformer width, `H`=`num_heads`:
+
+```
+features [B, T, D]  --input_projection-->  [B, T, d_model]
+  --+ positional encoding (elementwise add)-->  [B, T, d_model]
+  --N x TransformerBlock-->  [B, T, d_model]
+  --final LayerNorm-->  temporal_representations [B, T, d_model]
+  --masked_mean_pool-->  pooled [B, d_model]
+  --classifier (Linear)-->  logits [B, num_classes]
+```
+
+Inside `MultiHeadSelfAttention`: `Q, K, V = Linear(x)` each `[B, T,
+d_model]`, reshaped to `[B, H, T, d_model/H]`; attention computed
+per-head; heads concatenated back to `[B, T, d_model]`; output
+projection `Linear(d_model, d_model)`.
+
+**Attention:** `evat.models.transformer.attention.
+scaled_dot_product_attention` computes
+`softmax(QK^T / sqrt(d_k)) V` directly — the central operation is a few
+lines of tensor math, not hidden behind an external call.
+
+**Masking:** Phase 5's `[T]` validity mask is passed through as a **key**
+mask — `[B, 1, 1, T]`, broadcast over heads and query positions. Invalid
+key positions get score `-inf` before softmax, so they receive exactly
+zero attention weight from every query. Invalid query positions still
+compute an output (attention over whatever valid keys exist), but that
+output is excluded later by `masked_mean_pool` — the encoder does not
+need to separately mask queries. A fully-masked row (all keys invalid)
+would produce `NaN` from softmax-over-all-`-inf`; this is explicitly
+replaced with zero weight rather than left to propagate.
+
+**Positional encoding:** standard sinusoidal
+(`PE(pos,2i)=sin(pos/10000^(2i/d_model))`, `PE(pos,2i+1)=cos(...)`),
+computed directly and added to the projected features — not borrowed
+from an external positional-encoding library. Verified by a test that
+`[A,B,C]` and `[C,B,A]` produce different encoded representations (since
+attention alone is permutation-invariant, this additive signal is the
+model's only source of temporal order).
+
+**Transformer block: pre-norm**, chosen deliberately —
+`x = x + MHSA(LayerNorm(x))`, `x = x + FFN(LayerNorm(x))` — over the
+original post-norm convention, because pre-norm keeps the residual
+stream close to identity end-to-end and trains more reliably at depth
+without a learning-rate warmup schedule. Applied consistently in every
+block (see `block.py` docstring).
+
+**FFN:** `Linear(d_model, d_ff) -> activation -> Dropout ->
+Linear(d_ff, d_model)`, with `d_ff`, activation (`relu`/`gelu`), and
+dropout all configurable, not hard-coded.
+
+**Temporal pooling:** masked mean over valid positions only
+(`sum(valid) / count(valid)`) — verified equivalent between an unpadded
+`[A,B,C]` sequence and a padded `[A,B,C,pad,pad]` sequence when the
+padding is marked invalid.
+
+**Prediction head:** currently a single `Linear(d_model, num_classes)`
+classification head on the pooled representation, but the model returns
+a `VideoTransformerOutput` dataclass exposing `logits`, `pooled`,
+`temporal_representations` (per-timestep, `[B, T, d_model]`), and
+optional `attention_weights` — enough intermediate state for a later
+anomaly-detection or temporal-event-prediction head to reuse the same
+encoder without modification.
+
+**Configuration** (`configs/transformer.yaml` /
+`evat.models.transformer.config.TransformerConfig`): `feature_dim`,
+`d_model`, `num_heads`, `num_layers`, `d_ff`, `dropout`,
+`max_sequence_length`, `num_classes`, `positional_encoding`, `pooling`.
+Validated at construction (`d_model % num_heads == 0`, positive
+dimensions/lengths, supported encoding/pooling names) with clear
+`ValueError`s.
+
+**Temporal baseline** (`evat.models.temporal_baseline.
+TemporalMeanPoolBaseline`): masked mean-pool features straight into an
+MLP classifier, no attention at all. Implemented in this phase so
+Phase 7 can directly compare "does self-attention help over just
+averaging the features" — that comparison experiment itself is Phase
+7's job, not run here.
+
+**Attention visualization** (`evat.visualization.attention_viz`):
+optional, debug-only rendering of one query's attention weights over
+time (`attention_row_to_bars`) or a full `[T, T]` attention matrix
+(`attention_matrix_to_heatmap`). Never computed by default —
+`return_attention=True` must be passed explicitly, since keeping
+attention weights around increases memory use.
 
 ## Compute environment split
 

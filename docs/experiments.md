@@ -116,3 +116,36 @@ Not performed. No claim is made that either representation is superior.
 | Experiment | Backbone | Pretrained | Frozen | Input size | Feature dim | Videos | Frames | Tracks | Sequences | GPU | Runtime | Throughput |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | _none yet_ | — | — | — | — | — | — | — | — | — | — | — | — |
+
+## Video Transformer (Phase 6)
+
+**Status: training not yet executed. No model performance metrics are
+claimed.**
+
+### Planned experiment strategy
+
+1. **Smoke run** — synthetic tensors only: verify the model builds, moves
+   to GPU, forward/backward pass work, and a checkpoint saves/loads — no
+   performance conclusions, no real data required.
+2. **Small training run** — on real Phase 5 feature sequences, once a
+   downstream label source exists (this phase implements the model and
+   the interface, not a labeled task — see limitations below). Would
+   record: GPU, batch size, sequence length, feature dimension, `d_model`,
+   layers, heads, learning rate, epochs, runtime, and validation metrics,
+   all as actually measured.
+3. Ablations (sequence length, layers, heads, temporal baseline vs.
+   Transformer) are explicitly deferred to Phase 7.
+
+### How results will be recorded
+
+`notebooks/06_video_transformer.ipynb` prints configuration, parameter
+count, and (once a real run is possible) loss/metrics/runtime directly;
+those values would be copied into the table below and into a
+`results/transformer/<experiment_name>/` record, following the same
+`config.yaml`/`metrics.json`/`summary.md` convention as prior phases.
+
+### Results
+
+| Experiment | d_model | Layers | Heads | Seq length | Params | GPU | Batch size | Epochs | Runtime | Metric |
+|---|---|---|---|---|---|---|---|---|---|---|
+| _none yet_ | — | — | — | — | — | — | — | — | — | — |
