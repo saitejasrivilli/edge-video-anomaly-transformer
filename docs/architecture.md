@@ -41,8 +41,8 @@ Optimized Runtime
 | Video preprocessing | Implemented (Phase 2) — YouTube-VOS video index, frame sampling, temporal sequence construction, [T, C, H, W] tensor + mask loading. No resizing/normalization/augmentation yet. |
 | Segmentation | Code complete (Phase 3) — U-Net baseline, dataset/transforms/loss/metrics/trainer/checkpointing/visualization implemented and unit-tested (CPU, synthetic fixtures). **Training not yet executed in Colab; no performance metrics exist yet.** |
 | Object tracking | Code complete (Phase 4) — baseline mask-IoU greedy tracker, lifecycle (NEW/ACTIVE/MISSED/TERMINATED), ground-truth/prediction separation, identity metrics, visualization implemented and unit-tested (CPU, synthetic fixtures). **Colab evaluation not yet executed; no tracking performance metrics exist yet.** |
-| Visual feature extraction | Not started (Phase 5) |
-| Video Transformer (from scratch) | Not started (Phase 6) |
+| Visual feature extraction | Code complete (Phase 5) — baseline handcrafted encoder, learned MobileNetV3-Small encoder (untrained weights locally), crop/temporal/cache layers implemented and unit-tested (CPU, synthetic fixtures, no pretrained-weight download). **Colab feature-extraction experiment not yet executed; no performance or feature-quality metrics exist yet.** |
+| Video Transformer (from scratch) | Not started (Phase 6) — **not implemented yet** |
 | Baselines / ablations | Not started (Phase 7) |
 | Anomaly detection | Not started (Phase 8) |
 | Inference optimization | Not started (Phase 9) |
@@ -169,6 +169,71 @@ from metrics.
 **Temporal integration:** reuses the Phase 2 `evat.video.sequence.
 TemporalSequence` / `evat.video.tensors.load_temporal_sequence` reader —
 no separate video reader was built for tracking.
+
+## Visual feature extraction (Phase 5)
+
+**The Video Transformer is not implemented yet.** This layer only
+produces the per-track temporal feature sequences a future Transformer
+would consume — it does no temporal modeling itself.
+
+**Feature representation:** `evat.features.schemas.VisualFeature`
+(`frame_id`, `track_id` — `None` for a global/full-frame feature,
+`feature` vector, `extractor_name`) and `TemporalFeatureSequence`
+(`track_id`, `frame_ids`, `[T, D]` features, `[T]` validity mask).
+`extractor_name` is carried on every feature specifically so features
+from different encoders/configs are never silently mixed.
+
+**Baseline extractor:** `evat.features.encoders.BaselineStatsEncoder` —
+masked per-channel RGB mean + std (6 dims) + foreground area fraction (1
+dim) = 7-dim, fully deterministic, no learning. Establishes the
+extraction interface before introducing a learned model.
+
+**Learned extractor:** `evat.features.encoders.CNNFeatureEncoder` wraps
+**MobileNetV3-Small** (torchvision), used only as a spatial feature
+encoder — its classifier head is discarded, replaced with global average
+pooling (+ an optional linear projection to a configured `feature_dim`).
+Chosen over a larger ResNet for CPU/Colab feasibility. Pretrained
+weights: torchvision's `MobileNet_V3_Small_Weights.IMAGENET1K_V1`,
+license BSD-3-Clause (torchvision), downloaded automatically from
+PyTorch's model zoo **only when `pretrained=True`** — local tests and CI
+always construct with `pretrained=False` (random init, no network
+access). Not a video Transformer and not a pretrained temporal model —
+purely a per-frame/per-crop spatial encoder.
+
+**Crop strategy** (`evat.features.crops`): take the tracked object's
+bbox, expand by a configurable `padding` (clamped to frame bounds), zero
+out background pixels when `mask_aware=True`, then bilinear-resize to the
+encoder's input size. Kept separate from both `evat.video` (generic
+temporal reader) and `evat.training.transforms` (segmentation-specific,
+nearest-neighbor-for-masks preprocessing) — this is a distinct
+preprocessing contract for feature encoders only.
+
+**Global vs. object features:** object-level features
+(`extract_object_features_baseline`/`_cnn`) carry a real `track_id`;
+`extract_global_feature_baseline` produces one full-frame feature per
+frame with `track_id=None`. Both are supported because a future
+Transformer may benefit from object-level *and* scene-level context, but
+they are never conflated — code and callers must explicitly choose which
+they want.
+
+**Temporal sequence + missing frames** (`evat.features.temporal`): a
+track's per-frame features are assembled into a fixed-length `[T, D]`
+array by walking the frame order used elsewhere in the pipeline. When a
+track has no feature for a given frame position (occluded, not matched
+that frame, or past the end of available frames), that position is
+**zero-padded and marked invalid** in the `[T]` validity mask — never
+interpolated or fabricated. `sequence_length` and `stride` are
+configurable (`configs/features.yaml`), consistent with
+`evat.video.sampling`.
+
+**Feature cache** (`evat.features.cache.FeatureCache`): keys are a hash
+of `(dataset, video_id, frame_id, track_id, extractor_name, config_hash)`
+— `config_hash` is a stable hash of the encoder config, so changing any
+extractor setting produces different keys. `FeatureCache.get()` refuses
+to return an entry whose stored config hash doesn't match the caller's
+current config (`is_stale()` exposes this check directly) — a
+configuration change never silently reuses stale features. Feature
+caches are never committed to Git (`.gitignore`: `results/features/cache/`).
 
 ## Compute environment split
 

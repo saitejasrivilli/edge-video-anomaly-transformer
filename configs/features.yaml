@@ -1,0 +1,23 @@
+# Phase 5 feature extraction — default config.
+# Loaded via evat.features.encoders.CNNEncoderConfig (construct directly, or
+# extend with a from_yaml loader if this grows, matching the pattern used by
+# evat.training.config.SegmentationTrainingConfig / evat.tracking.tracker.TrackerConfig).
+
+extractor: cnn            # baseline | cnn
+backbone: mobilenet_v3_small
+pretrained: false         # true only in Colab; local tests always use false (no network)
+frozen: true
+input_height: 128
+input_width: 128
+feature_dim: null         # null = use backbone's native output dim (576 for mobilenet_v3_small)
+
+crop:
+  padding: 4
+  mask_aware: true
+
+temporal:
+  sequence_length: 16
+  stride: 1
+
+cache:
+  directory: results/features/cache

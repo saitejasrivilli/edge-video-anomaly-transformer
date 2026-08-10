@@ -76,3 +76,43 @@ same `config.yaml`/`metrics.json`/`summary.md` convention as segmentation.
 | Experiment | Split | Videos | Frames | Coverage | ID consistency | Identity switches | Fragmentation | Runtime | FPS |
 |---|---|---|---|---|---|---|---|---|---|
 | _none yet_ | — | — | — | — | — | — | — | — | — |
+
+## Visual feature extraction (Phase 5)
+
+**Status: feature extraction experiment not yet executed. No performance
+or feature-quality metrics are claimed.**
+
+### Planned experiment strategy
+
+1. **Smoke experiment** — a couple of YouTube-VOS training videos: verify
+   the MobileNetV3-Small encoder loads (with real pretrained weights, in
+   Colab only), objects crop correctly, features are produced, temporal
+   sequences build correctly, and the feature cache round-trips — no
+   performance conclusions.
+2. **Subset run** — a Colab-appropriate subset, measuring real extraction
+   throughput (features/sec) and recording backbone, pretrained/frozen
+   status, input size, feature dimension, frame/track/sequence counts,
+   GPU, and runtime — all as actually printed, never estimated.
+3. **Baseline vs. learned comparison** — optional; if performed, must use
+   an actual measurement (e.g. nearest-neighbor consistency of same-track
+   vs. different-track feature vectors) documented alongside the numbers.
+   If not performed, this document states that explicitly rather than
+   implying a comparison happened.
+
+### How results will be recorded
+
+`notebooks/05_feature_extraction.ipynb` prints shapes/counts/throughput
+directly; those values — not estimates — would be copied into the table
+below and into a `results/features/<experiment_name>/` record, following
+the same `config.yaml`/`metrics.json`/`summary.md` convention used for
+segmentation and tracking.
+
+### Baseline vs. learned comparison
+
+Not performed. No claim is made that either representation is superior.
+
+### Results
+
+| Experiment | Backbone | Pretrained | Frozen | Input size | Feature dim | Videos | Frames | Tracks | Sequences | GPU | Runtime | Throughput |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| _none yet_ | — | — | — | — | — | — | — | — | — | — | — | — |

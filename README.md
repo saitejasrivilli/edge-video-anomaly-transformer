@@ -1,14 +1,16 @@
 # Edge Video Anomaly Transformer (evat)
 
-## Status: Phase 4 — Object Tracking (code complete, evaluation not yet run)
+## Status: Phase 5 — Visual Feature Extraction (code complete, experiment not yet run)
 
 This project is under active, phase-by-phase development. Repository
 foundation, dataset ingestion (MVTec AD, YouTube-VOS), the temporal video
-pipeline, a segmentation baseline, and a baseline mask-IoU object tracker
-(matching/lifecycle/metrics/visualization, all unit-tested on CPU with
-synthetic fixtures) are implemented. **No segmentation training and no
-tracking evaluation have been executed yet** — see `docs/experiments.md`.
-The Video Transformer and anomaly detection do not exist yet.
+pipeline, a segmentation baseline, a baseline mask-IoU object tracker, and
+a visual feature extraction layer (handcrafted baseline + MobileNetV3-
+Small learned encoder, crop/temporal-sequence/cache logic, all
+unit-tested on CPU with synthetic fixtures) are implemented. **No
+segmentation training, no tracking evaluation, and no feature-extraction
+experiment have been executed yet** — see `docs/experiments.md`. **The
+Video Transformer is not implemented yet**, nor is anomaly detection.
 
 ## Purpose
 
@@ -111,6 +113,12 @@ repository. See `docs/datasets.md`.
   TERMINATED lifecycle, identity metrics, visualization) — implemented
   and tested (CPU, synthetic fixtures), **not yet evaluated on real
   YouTube-VOS data**.
+- Feature extraction: a handcrafted baseline encoder + a MobileNetV3-
+  Small learned encoder (untrained locally, no weight download), crop/
+  temporal-sequence/cache layers — implemented and tested (CPU, synthetic
+  fixtures), **not yet run on real YouTube-VOS data**. The Video
+  Transformer that will consume these sequences is not implemented yet.
 - Ruff (lint + format), mypy, pytest, pre-commit, and CI configured.
-- Dependencies: numpy, pillow, torch (CPU locally; GPU training happens in
-  Colab), pyyaml. No datasets or trained model weights are committed.
+- Dependencies: numpy, pillow, torch, torchvision (CPU locally; GPU work
+  happens in Colab), pyyaml. No datasets or trained model weights are
+  committed.

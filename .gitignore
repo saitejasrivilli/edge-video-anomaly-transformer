@@ -42,7 +42,11 @@ checkpoints/
 # Experiment outputs
 results/**/*.json
 results/**/*.png
+results/**/*.npy
 !results/.gitkeep
+
+# Feature caches (regenerable, potentially large)
+results/features/cache/
 
 # Colab
 .ipynb_checkpoints/
