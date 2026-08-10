@@ -40,7 +40,7 @@ Optimized Runtime
 | Dataset ingestion and validation | Implemented (Phase 1) — MVTec AD adapter; YouTube-VOS adapter added in Phase 2; DAVIS blocked |
 | Video preprocessing | Implemented (Phase 2) — YouTube-VOS video index, frame sampling, temporal sequence construction, [T, C, H, W] tensor + mask loading. No resizing/normalization/augmentation yet. |
 | Segmentation | Code complete (Phase 3) — U-Net baseline, dataset/transforms/loss/metrics/trainer/checkpointing/visualization implemented and unit-tested (CPU, synthetic fixtures). **Training not yet executed in Colab; no performance metrics exist yet.** |
-| Object tracking | Not started (Phase 4) |
+| Object tracking | Code complete (Phase 4) — baseline mask-IoU greedy tracker, lifecycle (NEW/ACTIVE/MISSED/TERMINATED), ground-truth/prediction separation, identity metrics, visualization implemented and unit-tested (CPU, synthetic fixtures). **Colab evaluation not yet executed; no tracking performance metrics exist yet.** |
 | Visual feature extraction | Not started (Phase 5) |
 | Video Transformer (from scratch) | Not started (Phase 6) |
 | Baselines / ablations | Not started (Phase 7) |
@@ -101,6 +101,74 @@ terminate, so checkpointing is not optional).
 frame / ground-truth / prediction / colored-overlay panel per sample, for
 inspecting failure modes (missed objects, fragmented masks, boundary
 errors) beyond aggregate metrics.
+
+## Object tracking baseline (Phase 4)
+
+**This is a baseline tracker, not production-grade tracking.** It exists
+to demonstrate understanding of the tracking problem — identity
+maintenance across frames — not to compete with established trackers.
+
+**Ground truth vs. prediction:** kept as two structurally distinct types
+throughout `evat.tracking`. `evat.tracking.ground_truth.GroundTruthInstance`
+carries YouTube-VOS's real object ID (`gt_object_id`); `evat.tracking.
+schemas.ObjectCandidate` (tracker input) and `TrackedInstance` (tracker
+output) carry no ground-truth identity at all — only a mask, bbox, and a
+tracker-assigned `track_id`. `ground_truth.strip_identity()` is the only
+path from one to the other, and it only removes identity, never adds it —
+so ground truth cannot silently leak into what the tracker sees.
+
+**Candidate source:** Phase 3's segmentation baseline is binary
+foreground/background only (not instance-aware), so it cannot yet produce
+per-object candidate masks. Until an instance-aware segmentation stage
+exists, this baseline obtains per-frame object candidates by extracting
+each ground-truth object ID's binary mask from YouTube-VOS annotations
+(`ground_truth.extract_ground_truth_instances`) and stripping the ID
+before handing candidates to the tracker. This is documented, not hidden:
+evaluation never uses the stripped ID back — it independently re-matches
+predicted tracks to ground truth by mask overlap.
+
+**Matching:** `evat.tracking.matching` implements mask IoU, bbox IoU, and
+centroid-distance similarity directly (no external tracking library).
+`greedy_match` assigns highest-scoring track/candidate pairs first,
+above a configurable threshold, with deterministic tie-breaking by index
+— not globally optimal (unlike Hungarian assignment), but simple,
+inspectable, and adequate for a first baseline.
+
+**Track lifecycle** (`evat.tracking.schemas.TrackState`):
+
+```
+unmatched candidate                  --> NEW
+NEW / ACTIVE / MISSED, matched       --> ACTIVE
+ACTIVE / MISSED, unmatched,
+  missed_frames <= max_missed_frames --> MISSED
+MISSED, missed_frames >
+  max_missed_frames                  --> TERMINATED (dropped)
+```
+
+Configurable via `evat.tracking.tracker.TrackerConfig` /
+`configs/tracking.yaml`: `matching_method`, `iou_threshold`,
+`max_missed_frames`, `min_track_length` — nothing hard-coded.
+
+**Metrics** (`evat.tracking.metrics`) — deliberately not MOTA/HOTA/IDF1:
+
+- **coverage**: fraction of ground-truth object-frames matched (IoU
+  above threshold) by any predicted track.
+- **id_consistency**: per ground-truth object, the fraction of its
+  matched frames assigned to that object's single most common predicted
+  track ID, averaged across objects.
+- **identity_switches**: total frame-to-frame changes in the matched
+  predicted track ID, summed across ground-truth objects.
+- **track_fragmentation**: average number of distinct predicted track
+  IDs matched to each ground-truth object.
+
+**Visualization:** `evat.visualization.tracking_overlay.draw_tracks`
+draws each tracked instance's bounding box and predicted `track_id` over
+the frame, so identity switches are visible directly, not just inferred
+from metrics.
+
+**Temporal integration:** reuses the Phase 2 `evat.video.sequence.
+TemporalSequence` / `evat.video.tensors.load_temporal_sequence` reader —
+no separate video reader was built for tracking.
 
 ## Compute environment split
 

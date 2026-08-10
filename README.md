@@ -1,14 +1,14 @@
 # Edge Video Anomaly Transformer (evat)
 
-## Status: Phase 3 — Video Object Segmentation (code complete, training not yet run)
+## Status: Phase 4 — Object Tracking (code complete, evaluation not yet run)
 
 This project is under active, phase-by-phase development. Repository
 foundation, dataset ingestion (MVTec AD, YouTube-VOS), the temporal video
-pipeline, and a segmentation baseline (model/dataset/loss/metrics/trainer/
-checkpointing/visualization, all unit-tested on CPU with synthetic
-fixtures) are implemented. **No segmentation training has been executed
-yet** — see `docs/experiments.md`. Tracking, the Video Transformer, and
-anomaly detection do not exist yet.
+pipeline, a segmentation baseline, and a baseline mask-IoU object tracker
+(matching/lifecycle/metrics/visualization, all unit-tested on CPU with
+synthetic fixtures) are implemented. **No segmentation training and no
+tracking evaluation have been executed yet** — see `docs/experiments.md`.
+The Video Transformer and anomaly detection do not exist yet.
 
 ## Purpose
 
@@ -107,6 +107,10 @@ repository. See `docs/datasets.md`.
 - Segmentation: a from-scratch U-Net baseline, training/checkpointing/
   evaluation/visualization code — implemented and tested (CPU, synthetic
   fixtures), **not yet trained on real data**.
+- Tracking: a baseline mask-IoU tracker (matching, NEW/ACTIVE/MISSED/
+  TERMINATED lifecycle, identity metrics, visualization) — implemented
+  and tested (CPU, synthetic fixtures), **not yet evaluated on real
+  YouTube-VOS data**.
 - Ruff (lint + format), mypy, pytest, pre-commit, and CI configured.
 - Dependencies: numpy, pillow, torch (CPU locally; GPU training happens in
   Colab), pyyaml. No datasets or trained model weights are committed.

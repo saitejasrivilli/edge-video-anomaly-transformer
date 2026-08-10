@@ -46,3 +46,33 @@ model on real data — local tests use tiny synthetic/fixture data only
 This table will only be filled in with numbers copied directly from a
 `results/segmentation/<experiment_name>/metrics.json` produced by an
 actual Colab run.
+
+## Object tracking baseline (Phase 4)
+
+**Status: tracking evaluation not yet executed. No tracking performance
+metrics are claimed.**
+
+### Planned experiment strategy
+
+1. **Smoke experiment** — a couple of YouTube-VOS training videos, verify
+   frames/masks/object IDs load, the tracker produces tracks, metrics
+   calculate, and visualization renders — no performance conclusions.
+2. **Baseline evaluation** — the official YouTube-VOS validation split
+   (never used for tuning), reporting coverage / id_consistency /
+   identity_switches / track_fragmentation as actually measured, plus
+   basic runtime/FPS (not claimed as "real-time" unless methodology
+   supports it).
+
+### How results will be recorded
+
+`notebooks/04_tracking_evaluation.ipynb` prints metrics and runtime
+directly from `evat.tracking.metrics.evaluate_tracking`; those printed
+values — not estimates — are what would be copied into the table below
+and into a `results/tracking/<experiment_name>/` record, following the
+same `config.yaml`/`metrics.json`/`summary.md` convention as segmentation.
+
+### Results
+
+| Experiment | Split | Videos | Frames | Coverage | ID consistency | Identity switches | Fragmentation | Runtime | FPS |
+|---|---|---|---|---|---|---|---|---|---|
+| _none yet_ | — | — | — | — | — | — | — | — | — |

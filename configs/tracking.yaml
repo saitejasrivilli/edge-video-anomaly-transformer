@@ -1,0 +1,14 @@
+# Phase 4 tracking baseline — default config.
+# Loaded via evat.tracking.tracker.TrackerConfig (construct directly or
+# extend with a from_yaml loader if this grows, matching the pattern in
+# evat.training.config.SegmentationTrainingConfig).
+matching_method: mask_iou   # mask_iou | bbox_iou | centroid
+iou_threshold: 0.3
+max_missed_frames: 5
+min_track_length: 1
+
+evaluation:
+  iou_threshold: 0.5   # separate, typically stricter threshold for gt-vs-prediction matching
+
+visualization:
+  box_width: 1
