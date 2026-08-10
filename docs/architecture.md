@@ -34,8 +34,8 @@ Optimized Runtime
 | Component | Status |
 |---|---|
 | Repository/package foundation | Implemented (Phase 0) |
-| Dataset ingestion and validation | Not started (Phase 1) |
-| Video preprocessing | Not started (Phase 2) |
+| Dataset ingestion and validation | Implemented (Phase 1) — MVTec AD adapter; YouTube-VOS adapter added in Phase 2; DAVIS blocked |
+| Video preprocessing | Implemented (Phase 2) — YouTube-VOS video index, frame sampling, temporal sequence construction, [T, C, H, W] tensor + mask loading. No resizing/normalization/augmentation yet. |
 | Segmentation | Not started (Phase 3) |
 | Object tracking | Not started (Phase 4) |
 | Visual feature extraction | Not started (Phase 5) |
