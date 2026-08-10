@@ -1,0 +1,16 @@
+# Phase 3 segmentation baseline — default config.
+# Loaded via evat.training.config.SegmentationTrainingConfig.from_yaml.
+seed: 42
+batch_size: 4
+learning_rate: 0.001
+epochs: 1
+optimizer: adam
+scheduler: null
+input_height: 128
+input_width: 128
+in_channels: 3
+out_channels: 1
+base_channels: 16
+depth: 3
+checkpoint_dir: checkpoints/segmentation
+eval_every: 1

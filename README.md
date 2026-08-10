@@ -1,10 +1,14 @@
 # Edge Video Anomaly Transformer (evat)
 
-## Status: Phase 0 — Repository and Engineering Foundation
+## Status: Phase 3 — Video Object Segmentation (code complete, training not yet run)
 
-This project is under active, phase-by-phase development. No segmentation,
-tracking, Transformer, or anomaly-detection functionality exists yet — only
-the repository/package foundation described below.
+This project is under active, phase-by-phase development. Repository
+foundation, dataset ingestion (MVTec AD, YouTube-VOS), the temporal video
+pipeline, and a segmentation baseline (model/dataset/loss/metrics/trainer/
+checkpointing/visualization, all unit-tested on CPU with synthetic
+fixtures) are implemented. **No segmentation training has been executed
+yet** — see `docs/experiments.md`. Tracking, the Video Transformer, and
+anomaly detection do not exist yet.
 
 ## Purpose
 
@@ -87,12 +91,22 @@ make check
 
 ## Dataset policy
 
-No dataset has been downloaded or integrated at this stage. Dataset
-selection and license verification happen in Phase 1. See
-`docs/datasets.md`.
+MVTec AD (CC BY-NC-SA 4.0, non-commercial) and YouTube-VOS (non-commercial
+research use, official Terms of Use) are the verified, selected datasets.
+DAVIS 2017 is **not used** — its licensing could not be verified from an
+official source. No raw dataset is downloaded or committed to this
+repository. See `docs/datasets.md`.
 
 ## Current project status
 
 - Package (`src/evat`) scaffolded, importable, tested.
+- Dataset ingestion: MVTec AD and YouTube-VOS adapters, manifest/validation
+  layer.
+- Video pipeline: frame sampling, temporal sequence construction, tensor
+  loading with object-ID preservation.
+- Segmentation: a from-scratch U-Net baseline, training/checkpointing/
+  evaluation/visualization code — implemented and tested (CPU, synthetic
+  fixtures), **not yet trained on real data**.
 - Ruff (lint + format), mypy, pytest, pre-commit, and CI configured.
-- No ML dependencies, no datasets, no trained models.
+- Dependencies: numpy, pillow, torch (CPU locally; GPU training happens in
+  Colab), pyyaml. No datasets or trained model weights are committed.

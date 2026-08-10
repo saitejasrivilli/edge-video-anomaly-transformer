@@ -13,6 +13,8 @@ authors = [{ name = "Sai Teja Srivilli Butturu" }]
 dependencies = [
     "numpy>=1.26",
     "pillow>=10.0",
+    "torch>=2.9",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
