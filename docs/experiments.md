@@ -149,3 +149,70 @@ those values would be copied into the table below and into a
 | Experiment | d_model | Layers | Heads | Seq length | Params | GPU | Batch size | Epochs | Runtime | Metric |
 |---|---|---|---|---|---|---|---|---|---|---|
 | _none yet_ | — | — | — | — | — | — | — | — | — | — |
+
+## Baselines and ablations (Phase 7)
+
+**Status: comparison and ablation experiments not yet executed. No
+model performance metrics are claimed.**
+
+Task: see `docs/task_definition.md` (object category classification from
+YouTube-VOS's official per-object category annotation). "NO VALID
+DOWNSTREAM TASK ESTABLISHED" does NOT apply — a genuine, dataset-provided
+label was identified and a defensible task was defined.
+
+### Planned experiment strategy
+
+1. **Main comparison** — `TemporalMeanPoolBaseline` vs. `TemporalGRUBaseline`
+   vs. `VideoTransformer`, identical split/features/sequence length/batch
+   size/optimizer/epochs (`configs/phase7.yaml`), evaluated with macro F1
+   (primary) and accuracy.
+2. **Sequence-length ablation** — `configs/phase7.yaml`'s
+   `ablations.sequence_length` list, tested only after inspecting how
+   many usable frames real sequences actually have.
+3. **Positional-encoding ablation** — Transformer with vs. without
+   sinusoidal positional encoding, same data/training.
+4. **Masking ablation** — correct validity masking vs. forcing the mask
+   to all-valid, to check whether padded positions contaminate the
+   pooled representation. Only meaningful if built sequences actually
+   contain padding.
+5. **Model-size ablation** — small vs. medium Transformer configuration,
+   same training budget, if compute permits.
+
+### Seed strategy
+
+Single fixed seed (`configs/phase7.yaml: seed: 42`) planned for the
+initial run, given free-Colab compute constraints. **This is a
+single-run limitation** — no statistical significance (mean/std across
+seeds) can be claimed from one seed. If compute permits, the main
+comparison will be repeated across a small number of seeds and mean ±
+std reported; until then, all numbers here would represent one run only.
+
+### How results will be recorded
+
+`notebooks/07_baselines_and_ablations.ipynb` calls
+`evat.experiments.record.save_experiment_result` for every model and
+ablation, writing `results/phase7/<experiment_name>/{config.json,
+metrics.json,summary.md}`. Numbers below would be copied directly from
+those files, never hand-typed.
+
+### Main comparison results
+
+| Model | Macro F1 | Accuracy | Macro Precision | Macro Recall | Params | Runtime |
+|---|---|---|---|---|---|---|
+| _none yet_ | — | — | — | — | — | — |
+
+### Ablation results
+
+| Ablation | Variant | Macro F1 | Accuracy | Runtime |
+|---|---|---|---|---|
+| _none yet_ | — | — | — | — |
+
+### Analysis
+
+Not yet possible — no experiments have been run. Once run, this section
+must explicitly answer (measured result vs. interpretation vs.
+hypothesis, kept distinct): does temporal modeling help; does the
+Transformer beat the non-temporal baseline; does it beat the GRU; does
+positional encoding matter; does sequence length matter; does masking
+matter; what is the compute/performance tradeoff. Negative results
+(GRU or MLP winning) are valid and will be reported as such.

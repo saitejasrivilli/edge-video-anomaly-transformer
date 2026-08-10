@@ -43,7 +43,7 @@ Optimized Runtime
 | Object tracking | Code complete (Phase 4) — baseline mask-IoU greedy tracker, lifecycle (NEW/ACTIVE/MISSED/TERMINATED), ground-truth/prediction separation, identity metrics, visualization implemented and unit-tested (CPU, synthetic fixtures). **Colab evaluation not yet executed; no tracking performance metrics exist yet.** |
 | Visual feature extraction | Code complete (Phase 5) — baseline handcrafted encoder, learned MobileNetV3-Small encoder (untrained weights locally), crop/temporal/cache layers implemented and unit-tested (CPU, synthetic fixtures, no pretrained-weight download). **Colab feature-extraction experiment not yet executed; no performance or feature-quality metrics exist yet.** |
 | Video Transformer (from scratch) | Code complete (Phase 6) — attention/positional-encoding/block/encoder/pooling/prediction-head all implemented from scratch with PyTorch primitives, unit-tested (CPU, synthetic data, including an attention correctness test and a tiny overfit test). **Colab training not yet executed; no model performance metrics exist yet.** |
-| Baselines / ablations | Not started (Phase 7) |
+| Baselines / ablations | Code complete (Phase 7) — downstream task defined (`docs/task_definition.md`: object category classification from YouTube-VOS's official per-object category annotation), video-level leakage-safe split, non-temporal MLP baseline, GRU temporal baseline, and a shared controlled train/eval loop across all three models (MLP/GRU/Transformer) implemented and unit-tested (CPU, tiny fixture). **Colab comparison/ablation experiments not yet executed; no model performance metrics exist yet.** |
 | Anomaly detection | Not started (Phase 8) |
 | Inference optimization | Not started (Phase 9) |
 | End-to-end pipeline | Not started (Phase 10) |
@@ -336,6 +336,60 @@ time (`attention_row_to_bars`) or a full `[T, T]` attention matrix
 (`attention_matrix_to_heatmap`). Never computed by default —
 `return_attention=True` must be passed explicitly, since keeping
 attention weights around increases memory use.
+
+## Baselines and controlled comparison (Phase 7)
+
+**Downstream task:** see `docs/task_definition.md` for the full
+definition, split, and leakage analysis — object category classification
+from a `TemporalFeatureSequence`, labeled with YouTube-VOS's official
+per-object `category` annotation. Not implemented until the actual
+annotation was inspected and confirmed genuine (CLAUDE.md Section 3: no
+fabricated labels).
+
+**Three models, one shared training/eval loop**
+(`evat.experiments.classifier_training`), so the comparison is controlled
+— only the model's `forward(features, validity_mask)` differs:
+
+1. `evat.models.temporal_baseline.TemporalMeanPoolBaseline` — mean-pool
+   features (no temporal order) -> MLP. Answers: does modeling temporal
+   order matter at all?
+2. `evat.models.temporal_gru.TemporalGRUBaseline` — GRU over the
+   sequence -> masked mean pool (same pooling as the Transformer, for a
+   fair comparison) -> MLP. Answers: does the Transformer beat a standard
+   non-attention temporal model?
+3. `evat.models.transformer.model.VideoTransformer` (Phase 6, unmodified).
+
+**Metrics:** macro F1 (primary, since YouTube-VOS categories are
+imbalanced), accuracy, macro precision/recall —
+`evat.experiments.metrics`, computed directly from confusion counts (no
+new dependency).
+
+**Data construction:** `evat.experiments.task_category.
+build_category_samples` reuses the Phase 4 tracker and Phase 5 crop/
+encode/temporal pipeline unchanged; it recovers a predicted track's
+ground-truth category by mask-IoU-matching each frame's tracked instance
+against ground truth (the same style of matching
+`evat.tracking.metrics.evaluate_tracking` uses), majority-voted across
+frames — robust to multi-object frames, not a fixed track-ordering
+assumption.
+
+**Split:** `split_videos_by_video_id` — video-level, seeded, deterministic.
+Deliberately built from the `train` split only rather than YouTube-VOS's
+official `valid` split, because that split intentionally contains unseen
+categories (a segmentation-generalization design incompatible with
+closed-set classification) — see `docs/task_definition.md` for the full
+reasoning.
+
+**Experiment config:** `configs/phase7.yaml` /
+`evat.experiments.config.Phase7ExperimentConfig` holds only what must be
+identical across all three models (seed, split, sequence length, batch
+size, optimizer, epochs) — model-specific architecture still comes from
+each model's own config.
+
+**Ablation plan** (not yet executed — see `docs/experiments.md`):
+sequence length, positional encoding on/off, validity masking correct/
+disabled, Transformer size small/medium. One variable at a time, using
+the main-comparison Transformer as the base configuration.
 
 ## Compute environment split
 

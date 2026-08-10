@@ -1,0 +1,21 @@
+# Phase 7 controlled comparison — shared settings across all three models.
+# Loaded via evat.experiments.config.Phase7ExperimentConfig.
+# Model-specific architecture parameters live in their own configs
+# (configs/transformer.yaml, etc.) — this file only holds what must be
+# identical across models for the comparison to be meaningful.
+
+seed: 42
+val_fraction: 0.2
+num_frames_per_video: 16
+sequence_length: 16
+stride: 1
+batch_size: 8
+learning_rate: 0.001
+epochs: 20
+optimizer: adam
+
+ablations:
+  sequence_length: [4, 16, 32]
+  positional_encoding: [sinusoidal, none]
+  masking: [correct, disabled]
+  transformer_size: [small, medium]

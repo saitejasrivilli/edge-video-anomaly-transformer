@@ -1,17 +1,19 @@
 # Edge Video Anomaly Transformer (evat)
 
-## Status: Phase 6 — Video Transformer from Scratch (code complete, training not yet run)
+## Status: Phase 7 — Baselines, Task Definition, and Ablations (code complete, experiments not yet run)
 
 This project is under active, phase-by-phase development. Repository
 foundation, dataset ingestion (MVTec AD, YouTube-VOS), the temporal video
 pipeline, a segmentation baseline, a baseline mask-IoU object tracker, a
-visual feature extraction layer, and a from-scratch temporal Video
-Transformer (attention/positional-encoding/blocks/pooling/head all
-hand-implemented with PyTorch primitives — no TimeSformer/VideoMAE/Video
-Swin/`nn.TransformerEncoder`, all unit-tested on CPU including an
-attention-correctness test and a tiny overfit test) are implemented.
-**No segmentation training, no tracking evaluation, no feature-extraction
-experiment, and no Transformer training have been executed yet** — see
+visual feature extraction layer, a from-scratch temporal Video
+Transformer, and a defined downstream task with two baselines (non-
+temporal MLP, GRU) for a controlled comparison against the Transformer
+are implemented. The downstream task — object category classification —
+uses YouTube-VOS's genuine official per-object category annotation; see
+`docs/task_definition.md` for the full definition, split, and leakage
+analysis. **No segmentation training, no tracking evaluation, no
+feature-extraction experiment, no Transformer training, and no Phase 7
+comparison/ablation experiments have been executed yet** — see
 `docs/experiments.md`. Anomaly detection is not implemented yet.
 
 ## Purpose
@@ -124,6 +126,12 @@ repository. See `docs/datasets.md`.
   complete pretrained video Transformer architecture is used anywhere.
   Unit-tested on CPU (including a hand-computed attention correctness
   test and a tiny overfit test), **not yet trained on real data**.
+- Baselines and task definition: object category classification task
+  (genuine YouTube-VOS annotation, see `docs/task_definition.md`),
+  leakage-safe video-level split, non-temporal MLP baseline, GRU temporal
+  baseline, shared controlled train/eval loop across MLP/GRU/Transformer
+  — implemented and tested (CPU, tiny fixture), **no comparison or
+  ablation experiment has been run yet**.
 - Ruff (lint + format), mypy, pytest, pre-commit, and CI configured.
 - Dependencies: numpy, pillow, torch, torchvision (CPU locally; GPU work
   happens in Colab), pyyaml. No datasets or trained model weights are
