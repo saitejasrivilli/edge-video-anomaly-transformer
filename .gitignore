@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets / env
+.env
+.env.*
+*.pem
+*.key
+
+# Datasets and model artifacts
+data/
+datasets/
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.h5
+checkpoints/
+
+# Experiment outputs
+results/**/*.json
+results/**/*.png
+!results/.gitkeep
+
+# Colab
+.ipynb_checkpoints/
+
+# Logs
+*.log
+logs/
