@@ -44,7 +44,7 @@ Optimized Runtime
 | Visual feature extraction | Code complete (Phase 5) — baseline handcrafted encoder, learned MobileNetV3-Small encoder (untrained weights locally), crop/temporal/cache layers implemented and unit-tested (CPU, synthetic fixtures, no pretrained-weight download). **Colab feature-extraction experiment not yet executed; no performance or feature-quality metrics exist yet.** |
 | Video Transformer (from scratch) | Code complete (Phase 6) — attention/positional-encoding/block/encoder/pooling/prediction-head all implemented from scratch with PyTorch primitives, unit-tested (CPU, synthetic data, including an attention correctness test and a tiny overfit test). **Colab training not yet executed; no model performance metrics exist yet.** |
 | Baselines / ablations | Code complete (Phase 7) — downstream task defined (`docs/task_definition.md`: object category classification from YouTube-VOS's official per-object category annotation), video-level leakage-safe split, non-temporal MLP baseline, GRU temporal baseline, and a shared controlled train/eval loop across all three models (MLP/GRU/Transformer) implemented and unit-tested (CPU, tiny fixture). **Colab comparison/ablation experiments not yet executed; no model performance metrics exist yet.** |
-| Anomaly detection | Not started (Phase 8) |
+| Anomaly detection | Code complete (Phase 8) — MVTec AD, separate from the YouTube-VOS video pipeline. Per-category Mahalanobis-distance normality model over pretrained CNN features (Phase 5, unmodified), image-level scoring, coarse pixel-level anomaly maps, ROC-AUC/PR-AUC metrics, all unit-tested (CPU, tiny fixture, no pretrained-weight download). **Colab experiment not yet executed; no anomaly-detection performance metrics exist yet.** |
 | Inference optimization | Not started (Phase 9) |
 | End-to-end pipeline | Not started (Phase 10) |
 | Production hardening | Not started (Phase 11) |
@@ -390,6 +390,76 @@ each model's own config.
 sequence length, positional encoding on/off, validity masking correct/
 disabled, Transformer size small/medium. One variable at a time, using
 the main-comparison Transformer as the base configuration.
+
+## Industrial anomaly detection (Phase 8)
+
+**MVTec AD is used separately from the YouTube-VOS video pipeline.** It
+is a still-image dataset; this phase does not treat it as video, does
+not touch the temporal Transformer, tracker, or temporal-sequence
+machinery at all. See `docs/anomaly_task_definition.md` for the full
+task/leakage/evaluation definition.
+
+**Dataset:** the unmodified Phase 1 `evat.data.datasets.mvtec` adapter —
+no second MVTec parser. License: CC BY-NC-SA 4.0, non-commercial (see
+`docs/datasets.md`); no MVTec data is committed to this repository.
+
+**Method — Mahalanobis distance over pretrained CNN features:**
+
+```
+normal (good) training images
+    -> Phase 5 CNNFeatureEncoder (pretrained MobileNetV3-Small, unmodified)
+    -> per-category normal feature distribution (mean + regularized covariance)
+    -> Mahalanobis distance of a test image's features from that distribution
+    -> anomaly score
+```
+
+Chosen over a reconstruction-based method (e.g. autoencoder) for
+implementation simplicity, interpretability, and because it needs no
+additional training beyond fitting simple statistics on top of the
+already-pretrained encoder. Covariance is regularized (`+ eps * I`)
+because MVTec's few-hundred-image training sets make the raw sample
+covariance in a 576-dim feature space frequently near-singular — a
+documented, standard shrinkage fix.
+
+**Category strategy: one normality model per category, never global.**
+MVTec categories have entirely different normal appearances; a single
+global distribution would treat ordinary cross-category variation as
+"anomalous." `evat.anomaly.model.CategoryAnomalyModel` keeps each
+category's mean/precision matrices isolated (see the category-isolation
+test in `tests/unit/anomaly/test_model.py`).
+
+**Image-level score:** Mahalanobis distance of the pooled ``[D]`` CNN
+feature vector (same pooled representation Phase 5 already produces —
+`evat.anomaly.spatial_features.extract_pooled_features`) from the
+category's fitted distribution.
+
+**Pixel-level localization — deliberately coarse:** rather than a
+per-spatial-location model (as in more elaborate patch-based methods
+like PaDiM), ONE shared normal distribution is fit over feature vectors
+from every spatial position of the backbone's pre-pool feature map
+(`evat.anomaly.spatial_features.extract_spatial_features`, reusing the
+encoder's already-public `.features` conv stack — Phase 5 itself is not
+modified). The resulting anomaly map sits at the backbone's downsampled
+feature-grid resolution and is upsampled via **nearest-neighbor**
+(`evat.anomaly.localization`) for visualization/pixel-metric comparison
+— nearest, not bilinear, so the visible block structure honestly reflects
+that this is coarse localization, not pixel-precise segmentation.
+
+**Threshold:** if an operating threshold is used at all
+(`evat.anomaly.threshold.derive_threshold_from_normal_scores`), it is the
+given percentile of the TRAINING normal images' own scores — never
+derived from test labels. Primary evaluation is threshold-free
+(ROC-AUC/PR-AUC).
+
+**Evaluation metrics** (`evat.anomaly.metrics`, no new dependency):
+image-level ROC-AUC (exact, via the Mann-Whitney U statistic) and PR-AUC
+(trapezoidal integration over the precision-recall curve); pixel-level
+ROC-AUC over anomalous test images' upsampled anomaly maps vs. binarized
+ground-truth masks.
+
+**Visualization:** `evat.visualization.anomaly_overlay.make_anomaly_panel`
+— original image | anomaly heatmap | ground-truth mask, for inspecting
+both successful and failed localizations.
 
 ## Compute environment split
 

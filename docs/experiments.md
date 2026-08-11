@@ -216,3 +216,59 @@ Transformer beat the non-temporal baseline; does it beat the GRU; does
 positional encoding matter; does sequence length matter; does masking
 matter; what is the compute/performance tradeoff. Negative results
 (GRU or MLP winning) are valid and will be reported as such.
+
+## Industrial anomaly detection (Phase 8)
+
+**Status: anomaly-detection experiment not yet executed. No anomaly-
+detection performance metrics are claimed.**
+
+MVTec AD is used separately from the YouTube-VOS video pipeline — see
+`docs/anomaly_task_definition.md`.
+
+### Planned experiment strategy
+
+1. **Smoke test** — one category, a tiny subset of train/test images:
+   verify data loading, feature extraction, model fitting, scoring, and
+   visualization run end-to-end — no performance conclusions.
+2. **Baseline run** — every MVTec category, processed one at a time
+   (never merged into a single global distribution — see
+   `docs/anomaly_task_definition.md` "Category strategy"), fitting a
+   per-category `CategoryAnomalyModel` from `train/good` images only and
+   evaluating on that category's full test set. If a category's data
+   does not fit within a Colab session, categories continue to be
+   processed one at a time (already the notebook's loop structure)
+   rather than silently subsampling.
+
+### How results will be recorded
+
+`notebooks/08_anomaly_detection.ipynb` calls
+`evat.anomaly.record.save_anomaly_result` per category, writing
+`results/phase8/<category>/{config.json,metrics.json,summary.md}`.
+Numbers below would be copied directly from those files.
+
+### Dataset statistics
+
+Not yet measured — the notebook prints category list, per-split counts,
+and defect-mask counts from the real dataset; only real printed numbers
+would be recorded here.
+
+### Main results (per category)
+
+| Category | Train (normal) | Test (normal) | Test (anomalous) | Image ROC-AUC | Image PR-AUC | Pixel ROC-AUC | Runtime |
+|---|---|---|---|---|---|---|---|
+| _none yet_ | — | — | — | — | — | — | — |
+
+### Qualitative findings
+
+Not yet available — the notebook is designed to save true-normal,
+clear-anomaly, subtle-anomaly, and any localization-failure examples
+without cherry-picking only successes.
+
+### Analysis
+
+Not yet possible. Once run: does the Mahalanobis-distance baseline
+separate normal from anomalous images well (image ROC-AUC)? Does
+pixel-level localization correlate with the ground-truth defect regions
+at all, given its documented coarseness? Which categories does the
+method fail on, and does that suggest MobileNetV3-Small's pretrained
+features are a poor fit for those categories' defect types?

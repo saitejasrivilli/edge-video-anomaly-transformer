@@ -1,0 +1,9 @@
+# Phase 8 anomaly detection — default config.
+# Loaded via evat.anomaly.config.AnomalyConfig.
+backbone: mobilenet_v3_small
+pretrained: false   # true only in Colab; local tests always use false (no network)
+frozen: true
+input_height: 128
+input_width: 128
+covariance_eps: 0.001
+threshold_percentile: 95.0

@@ -1,20 +1,21 @@
 # Edge Video Anomaly Transformer (evat)
 
-## Status: Phase 7 — Baselines, Task Definition, and Ablations (code complete, experiments not yet run)
+## Status: Phase 8 — Industrial Anomaly Detection (code complete, experiment not yet run)
 
 This project is under active, phase-by-phase development. Repository
 foundation, dataset ingestion (MVTec AD, YouTube-VOS), the temporal video
-pipeline, a segmentation baseline, a baseline mask-IoU object tracker, a
-visual feature extraction layer, a from-scratch temporal Video
-Transformer, and a defined downstream task with two baselines (non-
-temporal MLP, GRU) for a controlled comparison against the Transformer
-are implemented. The downstream task — object category classification —
-uses YouTube-VOS's genuine official per-object category annotation; see
-`docs/task_definition.md` for the full definition, split, and leakage
-analysis. **No segmentation training, no tracking evaluation, no
-feature-extraction experiment, no Transformer training, and no Phase 7
-comparison/ablation experiments have been executed yet** — see
-`docs/experiments.md`. Anomaly detection is not implemented yet.
+pipeline (segmentation baseline, mask-IoU tracker, visual feature
+extraction, from-scratch Video Transformer, controlled baseline/
+ablation experiment infrastructure), and an MVTec AD industrial anomaly-
+detection baseline (per-category Mahalanobis-distance normality model
+over pretrained CNN features, image-level scoring, coarse pixel-level
+localization) are implemented. MVTec AD is used **separately** from the
+YouTube-VOS video pipeline — see `docs/anomaly_task_definition.md` and
+`docs/task_definition.md` for the two tasks' definitions. **No
+segmentation training, tracking evaluation, feature-extraction
+experiment, Transformer training, Phase 7 comparison/ablation, or Phase 8
+anomaly-detection experiment has been executed yet** — see
+`docs/experiments.md`.
 
 ## Purpose
 
@@ -132,6 +133,11 @@ repository. See `docs/datasets.md`.
   baseline, shared controlled train/eval loop across MLP/GRU/Transformer
   — implemented and tested (CPU, tiny fixture), **no comparison or
   ablation experiment has been run yet**.
+- Anomaly detection (MVTec AD, separate from the video pipeline): per-
+  category Mahalanobis-distance normality model over pretrained CNN
+  features, image-level ROC-AUC/PR-AUC, coarse pixel-level anomaly maps
+  — implemented and tested (CPU, tiny fixture, no pretrained-weight
+  download), **no real MVTec experiment has been run yet**.
 - Ruff (lint + format), mypy, pytest, pre-commit, and CI configured.
 - Dependencies: numpy, pillow, torch, torchvision (CPU locally; GPU work
   happens in Colab), pyyaml. No datasets or trained model weights are
